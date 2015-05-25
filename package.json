@@ -1,0 +1,21 @@
+{
+  "name": "allex_directorydataservice",
+  "version": "0.1.0",
+  "description": "DirectoryDataService",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.hers.rs:allex_services/directorydata.git"
+  },
+  "keywords": [
+    "ecosystem:allex",
+    "Service",
+    "DirectoryData"
+  ],
+  "author": "HERS Belgrade",
+  "license": "ISC"
+}
+
