@@ -1,6 +1,9 @@
+var fs = require('fs');
+
 function createDirectoryDataService(execlib,ParentServicePack){
   var ParentService = ParentServicePack.Service,
-    dataSuite = execlib.dataSuite;
+    dataSuite = execlib.dataSuite,
+    lib = execlib.lib;
 
   function factoryCreator(parentFactory){
     return {
@@ -12,6 +15,9 @@ function createDirectoryDataService(execlib,ParentServicePack){
 
   function DirectoryDataService(prophash){
     ParentService.call(this,prophash);
+    if(!('path' in prophash)){
+      throw new lib.Error('No path in property hash');
+    }
   }
   ParentService.inherit(DirectoryDataService,factoryCreator,require('./storagedescriptor'));
   DirectoryDataService.prototype.__cleanUp = function(){
