@@ -1,14 +1,14 @@
-function createServiceSink(execlib,ParentSink){
-
-  if(!ParentSink){
+function createServiceSink(execlib, ParentSink) {
+  'use strict';
+  if (!ParentSink) {
     ParentSink = execlib.execSuite.registry.get('.').SinkMap.get('user');
   }
 
-  function ServiceSink(prophash,client){
-    ParentSink.call(this,prophash,client);
+  function ServiceSink(prophash, client) {
+    ParentSink.call(this, prophash, client);
   }
-  ParentSink.inherit(ServiceSink,require('../methoddescriptors/serviceuser'),require('../visiblefields/serviceuser'),require('../storagedescriptor'));
-  ServiceSink.prototype.__cleanUp = function(){
+  ParentSink.inherit(ServiceSink, require('../methoddescriptors/serviceuser'), require('../visiblefields/serviceuser'),require('../storagedescriptor'));
+  ServiceSink.prototype.__cleanUp = function () {
     ParentSink.prototype.__cleanUp.call(this);
   };
   return ServiceSink;
