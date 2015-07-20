@@ -7,7 +7,7 @@ function createUser(execlib, ParentUser) {
   function User(prophash) {
     ParentUser.call(this, prophash);
   }
-  ParentUser.inherit(User, require('../methoddescriptors/user'), [/*visible state fields here*/]/*or a ctor for StateStream filter*/, require('../visiblefields/user'));
+  ParentUser.inherit(User, require('../methoddescriptors/user'), ['havedirectoryservice']/*or a ctor for StateStream filter*/, require('../visiblefields/user'));
   User.prototype.__cleanUp = function () {
     ParentUser.prototype.__cleanUp.call(this);
   };
