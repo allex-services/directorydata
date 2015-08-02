@@ -11,6 +11,9 @@ function createServiceUser(execlib, ParentUser) {
   ServiceUser.prototype.__cleanUp = function () {
     ParentUser.prototype.__cleanUp.call(this);
   };
+  ServiceUser.prototype.setDirectoryServiceSink = function (sink, defer) {
+    this.__service.generateDirectoryRecords(sink, defer);
+  };
 
   return ServiceUser;
 }
