@@ -68,6 +68,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.onDirectorySubService = function (sink, defer) {
     defer = defer || q.defer();
+    sink.consumeChannel('fs', console.log.bind(console,'fs event'));
     sink.call('traverse','',{
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
       filecontents: this.parserinfo ? this.parserinfo : null
