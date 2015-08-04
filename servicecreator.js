@@ -24,9 +24,19 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.parserinfo = prophash.parserinfo; //{modulename: '...', propertyhash: {...}}
     this.supersink = null;
     this.dirUserSink = null;
+    this.traversalDefer = null;
+    this.traversals = new lib.Fifo();
   }
   ParentService.inherit(DirectoryDataService, factoryCreator, require('./storagedescriptor'));
   DirectoryDataService.prototype.__cleanUp = function() {
+    if (this.traversals) {
+      this.traversals.destroy();
+    }
+    this.traversals = null;
+    if (this.traversalDefer) {
+      this.traversalDefer.resolve(true);
+    }
+    this.traversalDefer = null;
     if(this.dirUserSink){
       this.dirUserSink.destroy();
     }
@@ -67,22 +77,49 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.onDirectorySubService = function (sink, defer) {
     defer = defer || q.defer();
-    sink.consumeChannel('fs', this.doTheTraversal.bind(this, sink, defer));
+    sink.consumeChannel('fs', this.queueTraversal.bind(this, sink));
+    this.doTheTraversal(sink, defer);
     return defer.promise;
   };
+  DirectoryDataService.prototype.queueTraversal = function (sink) {
+    try {
+    if (this.traversalDefer) {
+      this.traversals.push(sink);
+      return;
+    }
+    this.traversalDefer = q.defer();
+    this.doTheTraversal(sink, this.traversalDefer);
+    this.traversalDefer.done(
+        this.afterTraversal.bind(this)
+    );
+    } catch (e) {
+      console.error(e.stack);
+      console.error(e);
+    }
+  };
+  DirectoryDataService.prototype.afterTraversal = function () {
+    this.traversalDefer = null;
+    if (this.traversals.length) {
+      this.queueTraversal(this.traversals.pop());
+    }
+  };
   DirectoryDataService.prototype.doTheTraversal = function (sink, defer) {
-    defer = defer || q.defer();
+    if (!(sink && sink.destroyed)) { //this one's dead
+      if (defer) {
+        defer.resolve('ok');
+      }
+      return;
+    }
     this.supersink.call('delete');
+    var ss = this.supersink;
     sink.call('traverse','',{
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
       filecontents: this.parserinfo ? this.parserinfo : null
     }).done(
-      defer.resolve.bind(defer, 'ok'),
-      //console.error.bind(console,'traverse error:'),
-      defer.reject.bind(defer),
+      defer ? defer.resolve.bind(defer, 'ok') : null,
+      defer ? defer.reject.bind(defer) : null,
       this.supersink.call.bind(this.supersink,'create')
     );
-    return defer.promise;
   };
   return DirectoryDataService;
 }
