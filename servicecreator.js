@@ -47,7 +47,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.generateDirectoryRecords = function (sink, defer) {
     defer = defer || q.defer();
-    this.supersink.call('delete');
     if (!sink) {
       if (this.path) {
         this.startSubServiceStatically('allex_directoryservice','directoryservice',{path:this.path}).done(
@@ -68,7 +67,12 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.onDirectorySubService = function (sink, defer) {
     defer = defer || q.defer();
-    sink.consumeChannel('fs', console.log.bind(console,'fs event'));
+    sink.consumeChannel('fs', this.doTheTraversal.bind(this, sink, defer));
+    return defer.promise;
+  };
+  DirectoryDataService.prototype.doTheTraversal = function (sink, defer) {
+    defer = defer || q.defer();
+    this.supersink.call('delete');
     sink.call('traverse','',{
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
       filecontents: this.parserinfo ? this.parserinfo : null
