@@ -89,7 +89,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     }
     this.traversalDefer = q.defer();
     this.doTheTraversal(sink, this.traversalDefer);
-    this.traversalDefer.done(
+    this.traversalDefer.promise.done(
         this.afterTraversal.bind(this)
     );
     } catch (e) {
