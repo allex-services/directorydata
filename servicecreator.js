@@ -22,6 +22,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     ParentService.call(this, prophash);
     this.path = prophash.path;
     this.parserinfo = prophash.parserinfo; //{modulename: '...', propertyhash: {...}}
+    this.files = prophash.files;
     this.supersink = null;
     this.dirUserSink = null;
     this.traversalDefer = null;
@@ -42,6 +43,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     }
     this.dirUserSink = null;
     this.supersink = null;
+    this.files = null;
     this.parserinfo = null;
     this.path = null;
     ParentService.prototype.__cleanUp.call(this);
@@ -64,6 +66,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
         );
       } else {
         //problem...
+        console.error('No sink, no path...');
+        defer.reject(new lib.Error('NO_SINK_NO_PATH', 'DirectoryDataService needs either a sink or a path'));
       }
     } else {
       this.onDirectorySubService(sink, defer);
@@ -114,7 +118,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     var ss = this.supersink;
     sink.call('traverse','',{
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
-      filecontents: this.parserinfo ? this.parserinfo : null
+      filecontents: this.parserinfo ? this.parserinfo : null,
+      files: this.files
     }).done(
       defer ? defer.resolve.bind(defer, 'ok') : null,
       defer ? defer.reject.bind(defer) : null,
