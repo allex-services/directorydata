@@ -13,6 +13,46 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     };
   }
 
+  var _DDS2DSid = 0;
+  function DDS2DS(directorydataserviceinstance, dataservicesink) {
+    lib.Destroyable.call(this); //gotta be Destroyable, so that consumeChannel does not wrap me up
+    this.id = ++_DDS2DSid;
+    //console.log('DDS2DS',this.id,'starting');
+    this.dds = directorydataserviceinstance;
+    this.ddsdl = this.dds.destroyed.attach(this.onDirectoryDataDead.bind(this));
+    this.ds = dataservicesink;
+    this.dsdl = dataservicesink.destroyed.attach(this.onDataServiceSinkDead.bind(this));
+    this.ds.consumeChannel('fs',this);
+  }
+  lib.inherit(DDS2DS, lib.Destroyable);
+  DDS2DS.prototype.__cleanUp = function () {
+    //console.trace();
+    //console.log('DDS2DS',this.id,'dying');
+    this.ds.consumeChannel('fs', null);
+    if (this.dsdl) {
+      this.dsdl.destroy();
+    }
+    this.dsdl = null;
+    if (this.ddsdl) {
+      this.ddsdl.destroy();
+    }
+    this.ddsdl = null;
+    this.ds = null;
+    this.dds = null;
+  };
+  DDS2DS.prototype.onDirectoryDataDead = function () {
+    //console.log('DDS2DS',this.id,'found DirectoryDataService instance dead');
+    this.destroy();
+  };
+  DDS2DS.prototype.onDataServiceSinkDead = function () {
+    //console.log('DDS2DS',this.id,'found DirectoryService sink dead');
+    this.destroy();
+  };
+  DDS2DS.prototype.onStream = function (item) {
+    //console.log('DDS2DS',this.id,'queueing');
+    this.dds.queueTraversal(this.ds);
+  };
+
   function DirectoryDataService(prophash) {
     /* not obligatory any more, setDirectorySink is an alternative
     if(!(prophash && prophash.path)){
@@ -65,8 +105,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
           this.onDirectorySubServiceSuperSink.bind(this)
         );
       } else {
-        //problem...
-        console.error('No sink, no path...');
+        //console.error('No sink, no path...');
         defer.reject(new lib.Error('NO_SINK_NO_PATH', 'DirectoryDataService needs either a sink or a path'));
       }
     } else {
@@ -81,12 +120,15 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.onDirectorySubService = function (sink, defer) {
     defer = defer || q.defer();
-    sink.consumeChannel('fs', this.queueTraversal.bind(this, sink));
+    new DDS2DS(this, sink);
     this.doTheTraversal(sink, defer);
     return defer.promise;
   };
   DirectoryDataService.prototype.queueTraversal = function (sink) {
-    try {
+    if (!this.destroyed) {
+      //console.log('cannot queueTraversal, me ded');
+      return;
+    }
     if (this.traversalDefer) {
       this.traversals.push(sink);
       return;
@@ -96,12 +138,11 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.traversalDefer.promise.done(
         this.afterTraversal.bind(this)
     );
-    } catch (e) {
-      console.error(e.stack);
-      console.error(e);
-    }
   };
   DirectoryDataService.prototype.afterTraversal = function () {
+    if (!this.traversals) { //me ded already
+      return;
+    }
     this.traversalDefer = null;
     if (this.traversals.length) {
       this.queueTraversal(this.traversals.pop());
@@ -109,13 +150,14 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.doTheTraversal = function (sink, defer) {
     if (!(sink && sink.destroyed)) { //this one's dead
+      //console.log('no sink to call traverasl upon');
       if (defer) {
         defer.resolve('ok');
       }
       return;
     }
     this.supersink.call('delete');
-    var ss = this.supersink;
+    //var ss = this.supersink;
     sink.call('traverse','',{
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
       filecontents: this.parserinfo ? this.parserinfo : null,
@@ -124,6 +166,12 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       defer ? defer.resolve.bind(defer, 'ok') : null,
       defer ? defer.reject.bind(defer) : null,
       this.supersink.call.bind(this.supersink,'create')
+      /*
+      function (item) {
+        console.log(item);
+        ss.call('create', item);
+      }
+      */
     );
   };
   return DirectoryDataService;
