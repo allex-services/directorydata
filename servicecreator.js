@@ -158,11 +158,14 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     }
     this.supersink.call('delete');
     //var ss = this.supersink;
-    sink.call('traverse','',{
+    var to = {
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
-      filecontents: this.parserinfo ? this.parserinfo : null,
       files: this.files
-    }).done(
+    };
+    if (this.parserinfo) {
+      to.filecontents = this.parserinfo;
+    }
+    sink.call('traverse','',to).done(
       defer ? defer.resolve.bind(defer, 'ok') : null,
       defer ? defer.reject.bind(defer) : null,
       this.supersink.call.bind(this.supersink,'create')
