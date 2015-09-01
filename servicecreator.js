@@ -63,6 +63,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.path = prophash.path;
     this.parserinfo = prophash.parserinfo; //{modulename: '...', propertyhash: {...}}
     this.files = prophash.files;
+    this.metastats = prophash.metastats;
+    this.filetypes = prophash.filetypes;
     this.supersink = null;
     this.dirUserSink = null;
     this.traversalDefer = null;
@@ -83,6 +85,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     }
     this.dirUserSink = null;
     this.supersink = null;
+    this.filetypes = null;
+    this.metastats = null;
     this.files = null;
     this.parserinfo = null;
     this.path = null;
@@ -160,10 +164,18 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     //var ss = this.supersink;
     var to = {
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
-      files: this.files
     };
+    if (this.files) {
+      to.files = this.files;
+    }
     if (this.parserinfo) {
       to.filecontents = this.parserinfo;
+    }
+    if (this.metastats) {
+      to.metastats = this.metastats;
+    }
+    if (this.filetypes) {
+      to.filetypes = this.filetypes;
     }
     sink.call('traverse','',to).done(
       defer ? defer.resolve.bind(defer, 'ok') : null,
