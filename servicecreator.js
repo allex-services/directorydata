@@ -4,7 +4,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     q = lib.q,
     ParentService = ParentServicePack.Service,
     dataSuite = execlib.dataSuite,
-    MemoryStorage = dataSuite.MemoryStorage;
+    StorageType = dataSuite.MemoryStorage; //dataSuite.MemoryListStorage;
 
   function factoryCreator(parentFactory) {
     return {
@@ -49,7 +49,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.destroy();
   };
   DDS2DS.prototype.onStream = function (item) {
-    //console.log('DDS2DS',this.id,'queueing');
+    console.log('DDS2DS',this.id,'queueing');
     this.dds.queueTraversal(this.ds);
   };
 
@@ -65,6 +65,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.files = prophash.files;
     this.metastats = prophash.metastats;
     this.filetypes = prophash.filetypes;
+    this.needparsing = prophash.needparsing;
     this.supersink = null;
     this.dirUserSink = null;
     this.traversalDefer = null;
@@ -94,7 +95,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.createStorage = function(storagedescriptor) {
     //return ParentService.prototype.createStorage.call(this, storagedescriptor);
-    return new MemoryStorage(storagedescriptor);
+    return new StorageType(storagedescriptor);
   };
   DirectoryDataService.prototype.onSuperSink = function (supersink) {
     this.supersink = supersink;
@@ -160,8 +161,11 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       }
       return;
     }
+    //console.trace();
+    //console.log(this.files, this.parserinfo, 'starts delete');
     this.supersink.call('delete');
-    //var ss = this.supersink;
+    //console.log(this.files, 'ends delete');
+    //var ss = this.supersink, scountobj = {cnt:0};
     var to = {
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
     };
@@ -177,14 +181,26 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     if (this.filetypes) {
       to.filetypes = this.filetypes;
     }
+    if (this.needparsing) {
+      to.needparsing = this.needparsing;
+    }
     sink.call('traverse','',to).done(
       defer ? defer.resolve.bind(defer, 'ok') : null,
+      /*
+      function (){
+        console.log('traverse done', scountobj.cnt);
+        if (defer) {
+          defer.resolve('ok');
+        }
+      },
+      */
       defer ? defer.reject.bind(defer) : null,
       this.supersink.call.bind(this.supersink,'create')
       /*
       function (item) {
-        console.log(item);
-        ss.call('create', item);
+        //console.log(item);
+        scountobj.cnt++;
+        ss.call('create', item);//.done(console.log.bind(console, 'created'));
       }
       */
     );
