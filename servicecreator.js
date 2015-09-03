@@ -163,7 +163,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     }
     //console.trace();
     //console.log(this.files, this.parserinfo, 'starts delete');
-    this.supersink.call('delete');
+    this.data.delete();
     //console.log(this.files, 'ends delete');
     //var ss = this.supersink, scountobj = {cnt:0};
     var to = {
@@ -195,8 +195,9 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       },
       */
       defer ? defer.reject.bind(defer) : null,
-      this.supersink.call.bind(this.supersink,'create')
+      this.data.create.bind(this.data)
       /*
+      this.supersink.call.bind(this.supersink,'create')
       function (item) {
         //console.log(item);
         scountobj.cnt++;
