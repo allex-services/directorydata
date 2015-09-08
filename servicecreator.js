@@ -66,7 +66,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.metastats = prophash.metastats;
     this.filetypes = prophash.filetypes;
     this.needparsing = prophash.needparsing;
-    this.supersink = null;
     this.dirUserSink = null;
     this.traversalDefer = null;
     this.traversals = new lib.Fifo();
@@ -85,7 +84,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       this.dirUserSink.destroy();
     }
     this.dirUserSink = null;
-    this.supersink = null;
     this.filetypes = null;
     this.metastats = null;
     this.files = null;
@@ -98,7 +96,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     return new StorageType(storagedescriptor);
   };
   DirectoryDataService.prototype.onSuperSink = function (supersink) {
-    this.supersink = supersink;
     ParentService.prototype.onSuperSink.apply(this,arguments);
     this.generateDirectoryRecords();
   };
@@ -165,7 +162,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     //console.log(this.files, this.parserinfo, 'starts delete');
     this.data.delete();
     //console.log(this.files, 'ends delete');
-    //var ss = this.supersink, scountobj = {cnt:0};
     var to = {
       filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
     };
@@ -201,7 +197,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       function (item) {
         //console.log(item);
         scountobj.cnt++;
-        ss.call('create', item);//.done(console.log.bind(console, 'created'));
       }
       */
     );
