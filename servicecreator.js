@@ -101,8 +101,10 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.generateDirectoryRecords = function (sink, defer) {
     defer = defer || q.defer();
+    //console.log('generating records', sink? 'with' : 'without', 'sink');
     if (!sink) {
       if (this.path) {
+        //console.log('"standalone" mode!');
         this.startSubServiceStatically('allex_directoryservice','directoryservice',{path:this.path}).done(
           this.onDirectorySubServiceSuperSink.bind(this)
         );
@@ -191,8 +193,9 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       },
       */
       defer ? defer.reject.bind(defer) : null,
-      this.data.create.bind(this.data)
+      this.onDirectoryDataRecord.bind(this)
       /*
+      this.data.create.bind(this.data)
       this.supersink.call.bind(this.supersink,'create')
       function (item) {
         //console.log(item);
@@ -200,6 +203,13 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       }
       */
     );
+  };
+  DirectoryDataService.prototype.onDirectoryDataRecord = function (record) {
+    if (this.data) {
+      this.data.create(record);
+    } else {
+      console.log('too late for', record);
+    }
   };
   return DirectoryDataService;
 }
