@@ -106,7 +106,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       if (this.path) {
         //console.log('"standalone" mode!');
         this.startSubServiceStatically('allex_directoryservice','directoryservice',{path:this.path}).done(
-          this.onDirectorySubServiceSuperSink.bind(this)
+          this.onDirectorySubServiceSuperSink.bind(this),
+          console.error.bind(console, 'startSubServiceStatically error')
         );
       } else {
         //console.error('No sink, no path...');
@@ -119,7 +120,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   };
   DirectoryDataService.prototype.onDirectorySubServiceSuperSink = function (sink) {
     sink.subConnect('.',{name:'user',role:'user'}).done(
-      this.onDirectorySubService.bind(this)
+      this.onDirectorySubService.bind(this),
+      console.error.bind(console, 'no subconnect to self')
     );
   };
   DirectoryDataService.prototype.onDirectorySubService = function (sink, defer) {
@@ -140,7 +142,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.traversalDefer = q.defer();
     this.doTheTraversal(sink, this.traversalDefer);
     this.traversalDefer.promise.done(
-        this.afterTraversal.bind(this)
+        this.afterTraversal.bind(this),
+        console.error.bind(console, 'error in traversal')
     );
   };
   DirectoryDataService.prototype.afterTraversal = function () {
@@ -192,7 +195,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
         }
       },
       */
-      defer ? defer.reject.bind(defer) : null,
+      defer ? defer.reject.bind(defer) : console.error.bind(console, 'traverse error'),
       this.onDirectoryDataRecord.bind(this)
       /*
       this.data.create.bind(this.data)
