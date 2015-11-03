@@ -155,9 +155,25 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       this.queueTraversal(this.traversals.pop());
     }
   };
+  function fileFieldNameExtractor(names, fld) {
+    if (!(fld && fld.name)) {
+      return;
+    }
+    if (!fld.ismeta) {
+      names.push(fld.name);
+    }
+  }
+  function fileMetaFieldNameExtractor(names, fld) {
+    if (!(fld && fld.name)) {
+      return;
+    }
+    if (fld.ismeta) {
+      names.push(fld.name);
+    }
+  }
   DirectoryDataService.prototype.doTheTraversal = function (sink, defer) {
     if (!(sink && sink.destroyed)) { //this one's dead
-      //console.log('no sink to call traverasl upon');
+      //console.log('no sink to call traversal upon');
       if (defer) {
         defer.resolve('ok');
       }
@@ -167,8 +183,14 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     //console.log(this.files, this.parserinfo, 'starts delete');
     this.data.delete();
     //console.log(this.files, 'ends delete');
-    var to = {
-      filestats: this.storageDescriptor.record.fields.map(function(fld){return fld.name;}),
+    var filestats = [], metastats = [], to;
+    this.storageDescriptor.record.fields.forEach(fileFieldNameExtractor.bind(null, filestats));
+    this.storageDescriptor.record.fields.forEach(fileMetaFieldNameExtractor.bind(null, metastats));
+    if (lib.isArray(this.metastats)) {
+      lib.arryOperations.appendNonExistingItems(metastats, this.metastats);
+    }
+    to = {
+      filestats: filestats
     };
     if (this.files) {
       to.files = this.files;
@@ -176,8 +198,8 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     if (this.parserinfo) {
       to.filecontents = this.parserinfo;
     }
-    if (this.metastats) {
-      to.metastats = this.metastats;
+    if (metastats.length) {
+      to.metastats = metastats;
     }
     if (this.filetypes) {
       to.filetypes = this.filetypes;
