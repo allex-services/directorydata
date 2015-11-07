@@ -12,10 +12,13 @@ function createServiceUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
   ServiceUser.prototype.setDirectoryServiceSink = function (sink, defer) {
-    this.__service.data.delete({}). done(
+    this.__service.generateDirectoryRecords(sink, defer);
+    /*
+    this.__service.data.delete({}).done(
       this.__service.generateDirectoryRecords.bind(this.__service, sink, defer),
       defer.reject.bind(defer)
     );
+    */
   };
 
   return ServiceUser;
