@@ -121,7 +121,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     if (!sink) {
       if (this.path) {
         //console.log('"standalone" mode!');
-        this.startSubServiceStatically('allex_directoryservice','directoryservice',{path:this.path}).done(
+        this.startSubServiceStatically(this.directoryServiceModuleName,'directoryservice',{path:this.path}).done(
           this.onDirectorySubServiceSuperSink.bind(this, defer),
           console.error.bind(console, 'startSubServiceStatically error')
         );
@@ -269,6 +269,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       console.log('too late for', record);
     }
   };
+  DirectoryDataService.prototype.directoryServiceModuleName = 'allex_directoryservice';
   return DirectoryDataService;
 }
 
