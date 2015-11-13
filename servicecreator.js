@@ -56,7 +56,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.dds.queueTraversal(this.ds).done(
       null,
       //this.destroy.bind(this)
-      console.error.bind(console, 'sad bi ja trebalo da se ubijem')
+      console.error.bind(console, 'DDS2DS should die now because of error in traversal')
     );
   };
 
@@ -153,6 +153,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
       this.dirUserSink.destroy();
     }
     this.dirUserSink = sink;
+    this.state.set('dirUserSink', sink);
     new DDS2DS(this, sink);
     this.queueTraversal(sink, defer);
     return defer.promise;
