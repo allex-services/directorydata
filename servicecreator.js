@@ -266,9 +266,12 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     //console.log('record', record);
     if (this.data) {
       this.data.create(record);
+      this.onRecordCreated(record);
     } else {
       console.log('too late for', record);
     }
+  };
+  DirectoryDataService.prototype.onRecordCreated = function (record) {
   };
   DirectoryDataService.prototype.directoryServiceModuleName = 'allex_directoryservice';
   return DirectoryDataService;
