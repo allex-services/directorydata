@@ -2,6 +2,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
+    qlib = lib.qlib,
     ParentService = ParentServicePack.Service,
     dataSuite = execlib.dataSuite,
     StorageType = dataSuite.MemoryStorage; //dataSuite.MemoryListStorage;
@@ -55,8 +56,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     console.log('DDS2DS',this.id,'queueing');
     this.dds.queueTraversal(this.ds).done(
       null,
-      //this.destroy.bind(this)
-      console.error.bind(console, 'DDS2DS should die now because of error in traversal')
+      this.destroy.bind(this)
     );
   };
 
@@ -76,14 +76,9 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.dirUserSuperSink = null;
     this.dirUserSink = null;
     this.traversalDefer = null;
-    this.traversals = new lib.Fifo();
   }
   ParentService.inherit(DirectoryDataService, factoryCreator, require('./storagedescriptor'));
   DirectoryDataService.prototype.__cleanUp = function() {
-    if (this.traversals) {
-      this.traversals.destroy();
-    }
-    this.traversals = null;
     if (this.traversalDefer) {
       this.traversalDefer.resolve(true);
     }
@@ -155,35 +150,26 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.dirUserSink = sink;
     this.state.set('dirUserSink', sink);
     new DDS2DS(this, sink);
-    this.queueTraversal(sink, defer);
+    qlib.promise2defer(this.queueTraversal(sink), defer);
     return defer.promise;
   };
-  DirectoryDataService.prototype.queueTraversal = function (sink, defer) {
-    defer = defer || q.defer();
+  DirectoryDataService.prototype.queueTraversal = function (sink) {
     if (!this.destroyed) {
-      defer.reject(new lib.Error('ALREADY_DEAD', 'Cannot do things while dead'));
-      return defer.promise;
+      return q.reject(new lib.Error('ALREADY_DEAD', 'Cannot do things while dead'));
     }
     if (this.traversalDefer) {
-      this.traversals.push([sink,defer]);
-      return defer.promise;
+      return this.traversalDefer.promise;
     }
-    this.traversalDefer = defer;
-    this.doTheTraversal(sink, this.traversalDefer);
+    this.traversalDefer = q.defer();
     this.traversalDefer.promise.then(
-        this.afterTraversal.bind(this),
-        this.onTraversalFail.bind(this)
+      this.afterTraversal.bind(this),
+      this.onTraversalFail.bind(this)
     );
+    this.doTheTraversal(sink, this.traversalDefer);
     return this.traversalDefer.promise;
   };
   DirectoryDataService.prototype.afterTraversal = function () {
-    if (!this.traversals) { //me ded already
-      return;
-    }
     this.traversalDefer = null;
-    if (this.traversals.length) {
-      this.queueTraversal.apply(this, this.traversals.pop());
-    }
   };
   DirectoryDataService.prototype.onTraversalFail = function (reason) {
     var t;
@@ -196,12 +182,6 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     }
     this.dirUserSuperSink = null;
     this.traversalDefer = null;
-    while (this.traversals.length) {
-      t = this.traversals.pop();
-      if (t[1]) {
-        t[1].reject(reason);
-      }
-    }
   };
   function fileFieldNameExtractor(names, fld) {
     if (!(fld && fld.name)) {
