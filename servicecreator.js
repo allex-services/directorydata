@@ -53,7 +53,7 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     this.destroy();
   };
   DDS2DS.prototype.onStream = function (item) {
-    console.log('DDS2DS',this.id,'queueing');
+    //console.log('DDS2DS',this.id,'queueing');
     this.dds.queueTraversal(this.ds).done(
       null,
       this.destroy.bind(this)
