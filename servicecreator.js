@@ -1,9 +1,8 @@
-function createDirectoryDataService(execlib, ParentServicePack) {
+function createDirectoryDataService(execlib, ParentService) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
     qlib = lib.qlib,
-    ParentService = ParentServicePack.Service,
     dataSuite = execlib.dataSuite,
     StorageType = dataSuite.MemoryStorage; //dataSuite.MemoryListStorage;
 
@@ -129,9 +128,14 @@ function createDirectoryDataService(execlib, ParentServicePack) {
     return defer.promise;
   };
   DirectoryDataService.prototype.onDirectorySubServiceSuperSink = function (defer, sink) {
-    if (this.dirUserSuperSink) {
+    if (this.dirUserSuperSink && this.dirUserSuperSink.destroyed) {
+      this.dirUserSuperSink.destroyed.attach(this.setDirectorySubServiceSuperSink.bind(this, defer, sink));
       this.dirUserSuperSink.destroy();
+    } else {
+      this.setDirectorySubServiceSuperSink(defer, sink);
     }
+  };
+  DirectoryDataService.prototype.setDirectorySubServiceSuperSink = function (defer, sink) {
     this.dirUserSuperSink = sink;
     sink.subConnect('.',{name:'user',role:'user'}).done(
       this.onDirectorySubService.bind(this, defer),
