@@ -148,9 +148,14 @@ function createDirectoryDataService(execlib, ParentService) {
       console.error('NO DEFER?!');
       return;
     }
-    if (this.dirUserSink) {
+    if (this.dirUserSink && this.dirUserSink.destroyed) {
+      this.dirUserSink.destroyed.attach(this.scanSubDirectory.bind(this, defer, sink));
       this.dirUserSink.destroy();
+    } else {
+      this.scanSubDirectory(defer, sink);
     }
+  };
+  DirectoryDataService.prototype.scanSubDirectory = function (defer, sink) {
     this.dirUserSink = sink;
     this.state.set('dirUserSink', sink);
     new DDS2DS(this, sink);
