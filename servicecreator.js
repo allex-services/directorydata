@@ -156,6 +156,12 @@ function createDirectoryDataService(execlib, ParentService) {
     }
   };
   DirectoryDataService.prototype.scanSubDirectory = function (defer, sink) {
+    if (!this.destroyed) {
+      return;
+    }
+    if (!sink.destroyed) {
+      return;
+    }
     this.dirUserSink = sink;
     this.state.set('dirUserSink', sink);
     new DDS2DS(this, sink);
