@@ -74,6 +74,7 @@ function createDirectoryDataService(execlib, ParentService) {
     this.needparsing = prophash.needparsing;
     this.dirUserSuperSink = null;
     this.dirUserSink = null;
+    this.dirUserSinkDestructionListener = null;
     this.traversalDefer = null;
   }
   ParentService.inherit(DirectoryDataService, factoryCreator, require('./storagedescriptor'));
@@ -82,6 +83,7 @@ function createDirectoryDataService(execlib, ParentService) {
       this.traversalDefer.resolve(true);
     }
     this.traversalDefer = null;
+    this.purgeDirUserSinkDestructionListener();
     if(this.dirUserSink){
       this.dirUserSink.destroy();
     }
@@ -148,9 +150,17 @@ function createDirectoryDataService(execlib, ParentService) {
       console.error('NO DEFER?!');
       return;
     }
-    if (this.dirUserSink && this.dirUserSink.destroyed) {
-      this.dirUserSink.destroyed.attach(this.scanSubDirectory.bind(this, defer, sink));
-      this.dirUserSink.destroy();
+    if (this.dirUserSink) {
+      if (this.dirUserSink.destroyed) {
+        console.log(this.actualPath(), 'will wait for destruction');
+        this.dirUserSink.destroyed.attach(this.scanSubDirectory.bind(this, defer, sink));
+        this.dirUserSink.destroy();
+      } else {
+        console.log('this is my wreck of dirUserSink');
+        console.log(require('util').inspect(this.dirUserSink, {depth:7}));
+        process.exit(5);
+        return;
+      }
     } else {
       this.scanSubDirectory(defer, sink);
     }
@@ -162,11 +172,23 @@ function createDirectoryDataService(execlib, ParentService) {
     if (!sink.destroyed) {
       return;
     }
+    this.dirUserSinkDestructionListener = sink.destroyed.attach(this.onDirUserSinkDead.bind(this));
     this.dirUserSink = sink;
-    this.state.set('dirUserSink', sink);
+    console.log(this.actualPath(), 'will new DDS2DS');
     new DDS2DS(this, sink);
     qlib.promise2defer(this.queueTraversal(sink), defer);
     return defer.promise;
+  };
+  DirectoryDataService.prototype.onDirUserSinkDead = function () {
+    this.purgeDirUserSinkDestructionListener();
+    this.dirUserSink = null;
+  };
+  DirectoryDataService.prototype.purgeDirUserSinkDestructionListener = function () {
+    var dusdl = this.dirUserSinkDestructionListener;
+    this.dirUserSinkDestructionListener = null;
+    if (dusdl) {
+      lib.runNext(dusdl.destroy.bind(dusdl), 100);
+    }
   };
   DirectoryDataService.prototype.queueTraversal = function (sink) {
     if (!this.destroyed) {
@@ -267,6 +289,9 @@ function createDirectoryDataService(execlib, ParentService) {
     }
   };
   DirectoryDataService.prototype.onRecordCreated = function (record) {
+  };
+  DirectoryDataService.prototype.actualPath = function () {
+    return this.path ? this.path : process.cwd();
   };
   DirectoryDataService.prototype.directoryServiceModuleName = 'allex_directoryservice';
   return DirectoryDataService;
