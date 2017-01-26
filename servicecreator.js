@@ -152,12 +152,12 @@ function createDirectoryDataService(execlib, ParentService) {
     }
     if (this.dirUserSink) {
       if (this.dirUserSink.destroyed) {
-        console.log(this.actualPath(), 'will wait for destruction');
+        //console.log(this.actualPath(), 'will wait for destruction');
         this.dirUserSink.destroyed.attach(this.scanSubDirectory.bind(this, defer, sink));
         this.dirUserSink.destroy();
       } else {
-        console.log('this is my wreck of dirUserSink');
-        console.log(require('util').inspect(this.dirUserSink, {depth:7}));
+        //console.log('this is my wreck of dirUserSink');
+        //console.log(require('util').inspect(this.dirUserSink, {depth:7}));
         process.exit(5);
         return;
       }
@@ -174,7 +174,7 @@ function createDirectoryDataService(execlib, ParentService) {
     }
     this.dirUserSinkDestructionListener = sink.destroyed.attach(this.onDirUserSinkDead.bind(this));
     this.dirUserSink = sink;
-    console.log(this.actualPath(), 'will new DDS2DS');
+    //console.log(this.actualPath(), 'will new DDS2DS');
     new DDS2DS(this, sink);
     qlib.promise2defer(this.queueTraversal(sink), defer);
     return defer.promise;
@@ -221,20 +221,20 @@ function createDirectoryDataService(execlib, ParentService) {
     this.traversalDefer = null;
   };
   function fileFieldNameExtractor(names, fld) {
-    if (!(fld && fld.name)) {
-      return;
-    }
-    if (!fld.ismeta) {
+    if (fld && fld.name && fld.isfilestat) {
       names.push(fld.name);
     }
+    return names;
   }
   function fileMetaFieldNameExtractor(names, fld) {
-    if (!(fld && fld.name)) {
-      return;
+    if (fld && fld.name && fld.ismeta) {
+      if (fld.src) {
+        names.push({src:fld.src, dest:fld.name});
+      } else {
+        names.push(fld.name);
+      }
     }
-    if (fld.ismeta) {
-      names.push(fld.name);
-    }
+    return names;
   }
   DirectoryDataService.prototype.doTheTraversal = function (sink, defer) {
     if (!(sink && sink.destroyed)) { //this one's dead
@@ -248,9 +248,9 @@ function createDirectoryDataService(execlib, ParentService) {
     //console.log(this.files, this.parserinfo, 'starts delete');
     this.data.delete();
     //console.log(this.files, 'ends delete');
-    var filestats = [], metastats = [], to;
-    this.storageDescriptor.record.fields.forEach(fileFieldNameExtractor.bind(null, filestats));
-    this.storageDescriptor.record.fields.forEach(fileMetaFieldNameExtractor.bind(null, metastats));
+    var filestats, metastats, to;
+    filestats = this.storageDescriptor.record.fields.reduce(fileFieldNameExtractor, []);
+    metastats = this.storageDescriptor.record.fields.reduce(fileMetaFieldNameExtractor, []);
     if (lib.isArray(this.metastats)) {
       lib.arryOperations.appendNonExistingItems(metastats, this.metastats);
     }
@@ -273,6 +273,8 @@ function createDirectoryDataService(execlib, ParentService) {
       to.needparsing = this.needparsing;
     }
     //console.log('traversing with', require('util').inspect(to, {depth:null}));
+    //defer.promise.then(console.log.bind(console, 'traverse done'));
+    this.filetypes = ['d'];
     sink.call('traverse','',to).done(
       defer ? defer.resolve.bind(defer, 'ok') : null,
       defer ? defer.reject.bind(defer) : console.error.bind(console, 'traverse error'),
