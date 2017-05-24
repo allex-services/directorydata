@@ -1,9 +1,11 @@
+var arrayoperationscreator = require('allex_arrayoperationslowlevellib');
 function createDirectoryDataService(execlib, ParentService) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
     qlib = lib.qlib,
     dataSuite = execlib.dataSuite,
+    arrayOperations = arrayoperationscreator(lib.extend, lib.readPropertyFromDotDelimitedString, lib.isFunction, lib.Map, lib.AllexJSONizingError),
     StorageType = dataSuite.MemoryStorage; //dataSuite.MemoryListStorage;
 
   //q.longStackSupport = true;
@@ -252,7 +254,7 @@ function createDirectoryDataService(execlib, ParentService) {
     filestats = this.storageDescriptor.record.fields.reduce(fileFieldNameExtractor, []);
     metastats = this.storageDescriptor.record.fields.reduce(fileMetaFieldNameExtractor, []);
     if (lib.isArray(this.metastats)) {
-      lib.arryOperations.appendNonExistingItems(metastats, this.metastats);
+      arrayOperations.appendNonExistingItems(metastats, this.metastats);
     }
     to = {
       filestats: filestats

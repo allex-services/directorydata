@@ -10,6 +10,9 @@
     "type": "git",
     "url": "git@gitlab.hers.rs:allex_services/directorydata.git"
   },
+  "dependencies": {
+    "allex_arrayoperationslowlevellib": "1.x"
+  },
   "keywords": [
     "ecosystem:allex",
     "Service",
