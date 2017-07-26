@@ -1,5 +1,10 @@
 function createServiceUser(execlib, ParentUser) {
   'use strict';
+
+  var lib = execlib.lib,
+    q = lib.q,
+    qlib = lib.qlib;
+
   if (!ParentUser) {
     ParentUser = execlib.execSuite.ServicePack.Service.prototype.userFactory.get('user');
   }
@@ -12,7 +17,7 @@ function createServiceUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
   ServiceUser.prototype.setDirectoryServiceSink = function (sink, defer) {
-    this.__service.generateDirectoryRecords(sink, defer);
+    qlib.promise2defer(this.__service.generateDirectoryRecords(sink), defer);
     /*
     this.__service.data.delete({}).done(
       this.__service.generateDirectoryRecords.bind(this.__service, sink, defer),

@@ -16,6 +16,13 @@ function createDirectoryDataService(execlib, ParentService) {
     };
   }
 
+  function waitForDestruction (sink) {
+    var d = q.defer();
+    sink.destroyed.attach(d.resolve.bind(d, true));
+    sink.destroy();
+    return d.promise;
+  }
+
   var _DDS2DSid = 0;
   function DDS2DS(directorydataserviceinstance, dataservicesink) {
     lib.Destroyable.call(this); //gotta be Destroyable, so that consumeChannel does not wrap me up
@@ -114,49 +121,40 @@ function createDirectoryDataService(execlib, ParentService) {
       );
     }
   };
-  DirectoryDataService.prototype.generateDirectoryRecords = function (sink, defer) {
-    defer = defer || q.defer();
+  DirectoryDataService.prototype.generateDirectoryRecords = function (sink) {
     if (!sink) {
       if (this.path) {
         //console.log('"standalone" mode!');
         this.startSubServiceStatically(this.directoryServiceModuleName,'directoryservice',{path:this.path}).done(
-          this.onDirectorySubServiceSuperSink.bind(this, defer),
+          this.onDirectorySubServiceSuperSink.bind(this),
           console.error.bind(console, 'startSubServiceStatically error')
         );
       } else {
         defer.reject(new lib.Error('NO_SINK_NO_PATH', 'DirectoryDataService needs either a sink or a path'));
       }
     } else {
-      this.onDirectorySubService(defer, sink);
+      return this.onDirectorySubService(sink);
     }
-    return defer.promise;
   };
-  DirectoryDataService.prototype.onDirectorySubServiceSuperSink = function (defer, sink) {
+  DirectoryDataService.prototype.onDirectorySubServiceSuperSink = function (sink) {
+    var d;
     if (this.dirUserSuperSink && this.dirUserSuperSink.destroyed) {
-      this.dirUserSuperSink.destroyed.attach(this.setDirectorySubServiceSuperSink.bind(this, defer, sink));
-      this.dirUserSuperSink.destroy();
+      return waitForDestruction(this.dirUserSuperSink).then(this.setDirectorySubServiceSuperSink.bind(this, sink));
     } else {
-      this.setDirectorySubServiceSuperSink(defer, sink);
+      return this.setDirectorySubServiceSuperSink(sink);
     }
   };
-  DirectoryDataService.prototype.setDirectorySubServiceSuperSink = function (defer, sink) {
+  DirectoryDataService.prototype.setDirectorySubServiceSuperSink = function (sink) {
     this.dirUserSuperSink = sink;
-    sink.subConnect('.',{name:'user',role:'user'}).done(
-      this.onDirectorySubService.bind(this, defer),
-      console.error.bind(console, 'no subconnect to self')
+    return sink.subConnect('.',{name:'user',role:'user'}).then(
+      this.onDirectorySubService.bind(this)
     );
   };
-  DirectoryDataService.prototype.onDirectorySubService = function (defer, sink) {
-    if (!(defer && defer.promise)) {
-      console.trace();
-      console.error('NO DEFER?!');
-      return;
-    }
+  DirectoryDataService.prototype.onDirectorySubService = function (sink) {
     if (this.dirUserSink) {
       if (this.dirUserSink.destroyed) {
         //console.log(this.actualPath(), 'will wait for destruction');
-        this.dirUserSink.destroyed.attach(this.scanSubDirectory.bind(this, defer, sink));
-        this.dirUserSink.destroy();
+        return waitForDestruction(this.dirUserSink).then(this.scanSubDirectory.bind(this, sink));
       } else {
         //console.log('this is my wreck of dirUserSink');
         //console.log(require('util').inspect(this.dirUserSink, {depth:7}));
@@ -164,22 +162,21 @@ function createDirectoryDataService(execlib, ParentService) {
         return;
       }
     } else {
-      this.scanSubDirectory(defer, sink);
+      return this.scanSubDirectory(sink);
     }
   };
-  DirectoryDataService.prototype.scanSubDirectory = function (defer, sink) {
+  DirectoryDataService.prototype.scanSubDirectory = function (sink) {
     if (!this.destroyed) {
-      return;
+      return q(true);
     }
     if (!sink.destroyed) {
-      return;
+      return q(true);
     }
     this.dirUserSinkDestructionListener = sink.destroyed.attach(this.onDirUserSinkDead.bind(this));
     this.dirUserSink = sink;
     //console.log(this.actualPath(), 'will new DDS2DS');
     new DDS2DS(this, sink);
-    qlib.promise2defer(this.queueTraversal(sink), defer);
-    return defer.promise;
+    return this.queueTraversal(sink);
   };
   DirectoryDataService.prototype.onDirUserSinkDead = function () {
     this.purgeDirUserSinkDestructionListener();
