@@ -125,19 +125,20 @@ function createDirectoryDataService(execlib, ParentService) {
     if (!sink) {
       if (this.path) {
         //console.log('"standalone" mode!');
-        this.startSubServiceStatically(this.directoryServiceModuleName,'directoryservice',{path:this.path}).done(
-          this.onDirectorySubServiceSuperSink.bind(this),
-          console.error.bind(console, 'startSubServiceStatically error')
+        return this.startSubServiceStatically(this.directoryServiceModuleName,'directoryservice',{path:this.path}).then(
+          this.onDirectorySubServiceSuperSink.bind(this)
         );
       } else {
-        defer.reject(new lib.Error('NO_SINK_NO_PATH', 'DirectoryDataService needs either a sink or a path'));
+        return q.reject(new lib.Error('NO_SINK_NO_PATH', 'DirectoryDataService needs either a sink or a path'));
       }
     } else {
       return this.onDirectorySubService(sink);
     }
   };
   DirectoryDataService.prototype.onDirectorySubServiceSuperSink = function (sink) {
-    var d;
+    if (!sink) {
+      return q(false);
+    }
     if (this.dirUserSuperSink && this.dirUserSuperSink.destroyed) {
       return waitForDestruction(this.dirUserSuperSink).then(this.setDirectorySubServiceSuperSink.bind(this, sink));
     } else {
@@ -282,6 +283,7 @@ function createDirectoryDataService(execlib, ParentService) {
   };
   DirectoryDataService.prototype.onDirectoryDataRecord = function (record) {
     //console.log('record', record);
+    record = this.makeUpRecord(record);
     if (this.data) {
       this.data.create(record);
       this.onRecordCreated(record);
@@ -294,6 +296,9 @@ function createDirectoryDataService(execlib, ParentService) {
   DirectoryDataService.prototype.actualPath = function () {
     return this.path ? this.path : process.cwd();
   };
+  DirectoryDataService.prototype.makeUpRecord = function (record) {
+    return record;
+  }
   DirectoryDataService.prototype.directoryServiceModuleName = 'allex_directoryservice';
   return DirectoryDataService;
 }
